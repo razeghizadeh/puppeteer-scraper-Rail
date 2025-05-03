@@ -1,7 +1,6 @@
 {
   "name": "puppeteer-scraper",
   "version": "1.0.0",
-  "description": "Scraper using Puppeteer on Railway",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
