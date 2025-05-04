@@ -1,36 +1,35 @@
 const express = require('express');
-const puppeteer = require('puppeteer');
+const { chromium } = require('playwright');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
 app.get('/scrape', async (req, res) => {
-  const id = req.query.id;
-  if (!id) return res.status(400).send('Missing id parameter');
+  const targetUrl = req.query.url;
+
+  if (!targetUrl) {
+    return res.status(400).send('Missing "url" query parameter');
+  }
 
   try {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-
+    const browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
-    const url = `https://javanelec.com/product/${id}`;
-    await page.goto(url, { waitUntil: 'networkidle2' });
+    await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
 
-    const title = await page.title();
+    const content = await page.content();
     await browser.close();
 
-    res.json({ id, title, url });
-  } catch (error) {
-    res.status(500).json({ error: error.toString() });
+    res.send(content);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send(`Error scraping the page: ${err.message}`);
   }
 });
 
 app.get('/', (req, res) => {
-  res.send('👋 Scraper is running. Use /scrape?id=...');
+  res.send('👋 Scraper is ready. Use /scrape?url=...');
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
